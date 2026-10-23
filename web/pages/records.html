@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>任务记录 · 机械臂垃圾分拣</title>
+  <link rel="stylesheet" href="../assets/css/base.css">
+  <link rel="stylesheet" href="../assets/css/pages.css">
+</head>
+<body data-page="records">
+  <div class="app">
+    <aside id="sidebar"></aside>
+    <main class="main">
+      <header class="page-head">
+        <h1>任务记录</h1>
+        <p>分拣任务事件明细,按颜色与结果筛选</p>
+      </header>
+
+      <section class="card">
+        <div class="filter-row">
+          <label for="filter-color">颜色</label>
+          <select id="filter-color"></select>
+          <label for="filter-status">状态</label>
+          <select id="filter-status"></select>
+        </div>
+
+        <div style="overflow-x: auto">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>时间</th>
+                <th>任务</th>
+                <th>颜色</th>
+                <th>状态</th>
+                <th>抓取坐标 (mm)</th>
+                <th>耗时</th>
+                <th>模式</th>
+                <th>错误码</th>
+              </tr>
+            </thead>
+            <tbody id="records-body"></tbody>
+          </table>
+        </div>
+
+        <div class="records-foot">
+          <span id="record-count"></span>
+          <div class="pager">
+            <button type="button" class="btn" id="btn-prev">上一页</button>
+            <span class="page-info" id="page-info"></span>
+            <button type="button" class="btn" id="btn-next">下一页</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="../assets/js/pages/records.js"></script>
+</body>
+</html>

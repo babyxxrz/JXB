@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>运行监控 · 机械臂垃圾分拣</title>
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/pages.css">
+</head>
+<body data-page="monitor">
+  <div class="app">
+    <aside id="sidebar"></aside>
+    <main class="main">
+      <header class="page-head">
+        <h1>运行监控</h1>
+        <p>设备状态、任务启停与实时事件流</p>
+      </header>
+
+      <section class="card hero" id="hero"></section>
+
+      <div class="grid-2">
+        <section class="card">
+          <h2>开机自检</h2>
+          <ul class="check-list" id="check-list"></ul>
+          <p class="panel-hint" id="check-hint"></p>
+        </section>
+
+        <section class="card">
+          <h2>控制</h2>
+          <div class="control-group">
+            <button type="button" class="btn btn-primary" id="btn-start">启动任务</button>
+            <button type="button" class="btn btn-danger" id="btn-stop">停止任务</button>
+            <button type="button" class="btn" id="btn-check">开机自检</button>
+            <span class="control-divider"></span>
+            <select id="demo-select" aria-label="演示动作"></select>
+            <button type="button" class="btn" id="btn-demo">执行演示动作</button>
+          </div>
+          <p class="panel-hint" id="demo-hint"></p>
+        </section>
+      </div>
+
+      <section class="card">
+        <h2>实时事件</h2>
+        <ul class="feed" id="feed"></ul>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="assets/js/pages/monitor.js"></script>
+</body>
+</html>

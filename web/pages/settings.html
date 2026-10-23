@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>参数配置 · 机械臂垃圾分拣</title>
+  <link rel="stylesheet" href="../assets/css/base.css">
+  <link rel="stylesheet" href="../assets/css/pages.css">
+</head>
+<body data-page="settings">
+  <div class="app">
+    <aside id="sidebar"></aside>
+    <main class="main">
+      <header class="page-head">
+        <h1>参数配置</h1>
+        <p>视觉与运动参数,运动中禁止修改运动相关参数</p>
+      </header>
+
+      <section class="card">
+        <div class="form-section">
+          <h3>视觉</h3>
+          <div class="form-grid">
+            <div class="form-item">
+              <label for="f-confidence">置信度阈值</label>
+              <input type="number" id="f-confidence" min="0.05" max="1" step="0.05">
+              <span class="form-hint">默认 0.5,低于阈值转 HSV 兜底定位</span>
+            </div>
+            <div class="form-item">
+              <label for="f-rgb">RGB 指示灯模式</label>
+              <select id="f-rgb"></select>
+            </div>
+            <div class="form-item">
+              <label>蜂鸣器</label>
+              <label class="switch" style="align-self: flex-start">
+                <input type="checkbox" id="f-buzzer">
+                <span class="track"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3>运动(运动中禁止修改)</h3>
+          <div class="field-group" data-motion>
+            <div class="form-item">
+              <label for="f-wxmin">工作区 x 最小 (mm)</label>
+              <input type="number" id="f-wxmin" step="1">
+            </div>
+            <div class="form-item">
+              <label for="f-wxmax">工作区 x 最大 (mm)</label>
+              <input type="number" id="f-wxmax" step="1">
+            </div>
+            <div class="form-item">
+              <label for="f-wymin">工作区 y 最小 (mm)</label>
+              <input type="number" id="f-wymin" step="1">
+            </div>
+            <div class="form-item">
+              <label for="f-wymax">工作区 y 最大 (mm)</label>
+              <input type="number" id="f-wymax" step="1">
+            </div>
+            <div class="form-item">
+              <label for="f-z">抓取高度 z (mm)</label>
+              <input type="number" id="f-z" step="1">
+            </div>
+          </div>
+          <p class="form-hint" id="workspace-hint" style="margin-top: 10px"></p>
+          <h3 style="margin-top: 18px">容器位置 (mm)</h3>
+          <div class="field-group" data-motion>
+            <div class="form-item">
+              <label><span class="badge" style="--dot:#e34948">红</span> x / y</label>
+              <div style="display: flex; gap: 8px">
+                <input type="number" id="f-bin-red-x" step="1" style="width: 100%">
+                <input type="number" id="f-bin-red-y" step="1" style="width: 100%">
+              </div>
+            </div>
+            <div class="form-item">
+              <label><span class="badge" style="--dot:#eda100">黄</span> x / y</label>
+              <div style="display: flex; gap: 8px">
+                <input type="number" id="f-bin-yellow-x" step="1" style="width: 100%">
+                <input type="number" id="f-bin-yellow-y" step="1" style="width: 100%">
+              </div>
+            </div>
+            <div class="form-item">
+              <label><span class="badge" style="--dot:#2a78d6">蓝</span> x / y</label>
+              <div style="display: flex; gap: 8px">
+                <input type="number" id="f-bin-blue-x" step="1" style="width: 100%">
+                <input type="number" id="f-bin-blue-y" step="1" style="width: 100%">
+              </div>
+            </div>
+            <div class="form-item">
+              <label><span class="badge" style="--dot:#008300">绿</span> x / y</label>
+              <div style="display: flex; gap: 8px">
+                <input type="number" id="f-bin-green-x" step="1" style="width: 100%">
+                <input type="number" id="f-bin-green-y" step="1" style="width: 100%">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="save-bar">
+          <button type="button" class="btn btn-primary" id="btn-save">保存</button>
+          <span class="save-note" id="save-note"></span>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="../assets/js/pages/settings.js"></script>
+</body>
+</html>

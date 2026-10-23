@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>分类统计 · 机械臂垃圾分拣</title>
+  <link rel="stylesheet" href="../assets/css/base.css">
+  <link rel="stylesheet" href="../assets/css/pages.css">
+</head>
+<body data-page="stats">
+  <div class="app">
+    <aside id="sidebar"></aside>
+    <main class="main">
+      <header class="page-head">
+        <h1>分类统计</h1>
+        <p>按颜色与结果汇总分拣情况,明细见<a href="records.html">任务记录</a></p>
+      </header>
+
+      <div class="filter-row">
+        <label for="time-range">时间范围</label>
+        <select id="time-range">
+          <option value="1800000">最近 30 分钟</option>
+          <option value="3600000" selected>最近 1 小时</option>
+          <option value="0">全部</option>
+        </select>
+      </div>
+
+      <div class="kpi-row" id="kpi-row"></div>
+
+      <div class="charts">
+        <section class="card chart-card">
+          <h2>各颜色分拣结果</h2>
+          <p class="chart-sub">每类积木的成功与失败数量</p>
+          <div class="chart-body" id="chart-colors"></div>
+          <div class="chart-legend" id="legend-colors"></div>
+        </section>
+
+        <section class="card chart-card">
+          <h2>任务状态分布</h2>
+          <p class="chart-sub">全部任务的终态与进行中状态</p>
+          <div class="chart-body" id="chart-status"></div>
+          <div class="chart-legend" id="legend-status"></div>
+        </section>
+
+        <section class="card chart-card span-2">
+          <h2>最近任务耗时</h2>
+          <p class="chart-sub">最近 12 次任务的单次耗时,横线为 20s 验收上限</p>
+          <div class="chart-body" id="chart-duration"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="../assets/js/pages/stats.js"></script>
+</body>
+</html>
