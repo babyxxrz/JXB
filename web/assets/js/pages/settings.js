@@ -2,10 +2,10 @@
 // 维护置信度阈值、工作区与容器位置、抓取高度、RGB 灯模式与蜂鸣器开关;
 // 设备非待机时禁用运动相关参数(契约:运动中禁止修改运动相关参数)。
 
-import { init } from '../core/api.js';
+import { init, configApi } from '../core/api.js';
 import { getState, subscribe, saveConfig } from '../core/store.js';
 import { renderSidebar, showToast } from '../core/ui.js';
-import { COLORS, RGB_MODES } from '../core/config.js';
+import { APP, COLORS, RGB_MODES } from '../core/config.js';
 
 const el = {
   confidence: document.getElementById('f-confidence'),
@@ -40,13 +40,24 @@ for (const mode of RGB_MODES) {
 el.save.addEventListener('click', onSave);
 
 init();
-loadForm();
+if (APP.api.mode === 'real') {
+  // real 模式:配置以后端为准,页面打开时拉取
+  configApi
+    .load()
+    .then((cfg) => { fillForm(cfg); updateHint(); })
+    .catch(() => showToast('无法加载后端配置', 'error'));
+} else {
+  loadForm();   // mock 模式:本地存储
+}
 subscribe((state) => lockMotion(state.device.state));
 
 /* ------------------------------ 表单 ------------------------------ */
 
 function loadForm() {
-  const { config } = getState();
+  fillForm(getState().config);
+}
+
+function fillForm(config) {
   el.confidence.value = config.confidence_threshold;
   el.rgb.value = config.rgb_mode;
   el.buzzer.checked = config.buzzer;
@@ -106,7 +117,15 @@ function onSave() {
       { x: Number(el.bins[c].x.value), y: Number(el.bins[c].y.value) },
     ])),
   };
-  saveConfig(next);
   updateHint();
-  showToast('参数已保存');
+  if (APP.api.mode === 'real') {
+    // real 模式:保存到后端;运动中后端会拒绝(409)
+    configApi
+      .save(next)
+      .then(() => showToast('参数已保存'))
+      .catch((err) => showToast(err.message || '保存失败', 'error'));
+  } else {
+    saveConfig(next);
+    showToast('参数已保存');
+  }
 }

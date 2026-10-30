@@ -51,6 +51,26 @@ export const commands = {
   },
 };
 
+/** 参数配置:real 模式读写后端 /api/config;mock 模式由 store 与 localStorage 管理 */
+export const configApi = {
+  async load() {
+    const res = await fetch(`${APP.api.baseUrl}/config`);
+    if (!res.ok) throw new Error(`config load failed: ${res.status}`);
+    return res.json();
+  },
+  async save(cfg) {
+    const res = await fetch(`${APP.api.baseUrl}/config`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cfg),
+    });
+    if (!res.ok) {
+      const detail = await res.json().catch(() => null);
+      throw new Error(detail?.detail || `config save failed: ${res.status}`);
+    }
+  },
+};
+
 /* ------------------------------ real 模式 ------------------------------ */
 
 async function sendCommand(body) {
