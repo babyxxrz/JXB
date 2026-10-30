@@ -95,7 +95,14 @@ async function pollReal() {
     ]);
     const device = await stateRes.json();
     const events = await eventsRes.json();
-    update({ device });
+    update({
+      device: { state: device.state },
+      selfCheck: {
+        running: device.self_check?.running ?? false,
+        items: device.self_check?.items ?? [],
+        checkedAt: device.self_check?.checked_at_ms ?? null,
+      },
+    });
     // 后端按 event_id 去重,前端再兜底一次(幂等入库)
     const known = new Set(getState().events.map((e) => e.event_id));
     for (const ev of (events || []).reverse()) {

@@ -57,9 +57,20 @@ def get_config() -> dict:
 
 @router.put("/config")
 def put_config(config: Config) -> dict:
-    """保存参数配置。运动相关参数由前端在运动中锁定,后端再校验一次。"""
+    """保存参数配置(契约 6.6:运动中禁止修改运动相关参数)。
+
+    非待机时仅校验运动相关字段(工作区/容器位置/抓取高度)是否变化:
+    变化 → 409;未变化(如仅调 RGB 模式/蜂鸣器)→ 放行。
+    """
+    incoming = config.model_dump()
     if _adapter.get_state()["state"] != "idle":
-        raise HTTPException(status_code=409, detail="运动中禁止修改运动相关参数")
-    data = config.model_dump()
-    db.save_config(data)
-    return data
+        stored = db.load_config()
+        motion_changed = (
+            incoming["workspace"] != stored["workspace"]
+            or incoming["bins"] != stored["bins"]
+            or incoming["grab_height_mm"] != stored["grab_height_mm"]
+        )
+        if motion_changed:
+            raise HTTPException(status_code=409, detail="运动中禁止修改运动相关参数")
+    db.save_config(incoming)
+    return incoming

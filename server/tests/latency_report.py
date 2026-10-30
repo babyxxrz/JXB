@@ -33,7 +33,7 @@ def make_event(i: int, t_ms: int) -> dict:
         "started_at_ms": t_ms - 1500,
         "finished_at_ms": t_ms,
         "error_code": None if i % 3 else "LOW_CONFIDENCE",
-        "mode": "real",
+        "mode": "simulation",
         "result_basis": "controller_only" if i % 3 else "none",
     }
 

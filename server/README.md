@@ -12,15 +12,16 @@ python -m uvicorn app.main:app --port 8000
 
 浏览器打开 http://127.0.0.1:8000 (前端页面与 API 同源同端口)。
 
-- 默认 `JXB_CONTROL=mock`:内置模拟控制适配器,启动任务后自动产生分拣事件流,无硬件即可完整演示。
+- 默认 `JXB_CONTROL=mock`:内置模拟控制适配器,启动任务后自动产生分拣事件流,无硬件即可完整演示;模拟事件 mode 一律标记 simulation。
 - 切真实控制:`JXB_CONTROL=real`(待定项 T1/T7 确认后实现 ROS2 桥接,见 `app/control.py`)。
 - 数据落盘位置:`server/data/`(可用环境变量 `JXB_DATA_DIR` 重定向,已被 .gitignore 排除)。
+- 端口说明:本服务与 `web/start.bat` 同用 8000 端口,**二选一**;完整演示请用本服务(已托管前端)。
 
 ## API 一览(字段详见《技术设计文档》第 7 章)
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
-| POST | `/api/events` | task_event 上报(朱玉贺→本服务),event_id 幂等入库 |
+| POST | `/api/events` | task_event 上报(朱玉贺→本服务),event_id 幂等入库;status/color/mode/result_basis 按契约枚举严格校验,非法值 422 |
 | GET | `/api/events` | 查询:支持 `since`(增量)/`color`/`status`/时间范围/分页 |
 | GET | `/api/stats` | 分类统计:按颜色、状态汇总 + 成功率 + 平均耗时 |
 | GET | `/api/state` | 设备状态(idle/running/stopping/fault) |

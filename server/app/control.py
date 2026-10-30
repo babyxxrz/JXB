@@ -77,6 +77,10 @@ class MockControlAdapter(ControlAdapter):
             db.ingest([self._event(self._current["task_id"], "stop", now, {
                 "status": "stopped",
                 "occurred_at_ms": now,
+                "color": self._current["color"],
+                "x_mm": self._current["x_mm"],
+                "y_mm": self._current["y_mm"],
+                "z_mm": self._current["z_mm"],
                 "finished_at_ms": now,
                 "error_code": "STOP_REQUESTED",
             })])
@@ -169,7 +173,10 @@ class MockControlAdapter(ControlAdapter):
         x = round(random.uniform(ws["x_min"], ws["x_max"]), 1)
         y = round(random.uniform(ws["y_min"], ws["y_max"]), 1)
         z = cfg["grab_height_mm"]
-        self._current = {"task_id": task_id, "terminal": False}
+        self._current = {
+            "task_id": task_id, "terminal": False,
+            "color": color, "x_mm": x, "y_mm": y, "z_mm": z,
+        }
 
         now = self._now_ms()
         db.ingest([self._event(task_id, "queued", now, {
@@ -190,15 +197,15 @@ class MockControlAdapter(ControlAdapter):
             return
         self._current["terminal"] = True
 
+        # 模拟引擎产生的事件一律 mode=simulation(诚实标记,不冒充实机);
+        # status 与 error_code 仍按真实分布模拟,供异常处理路径演示。
         r = random.random()
         if r < 0.78:
-            status, mode, err = "succeeded", "real", None
+            status, err = "succeeded", None
         elif r < 0.88:
-            status, mode, err = "failed", "real", random.choice(ERRORS)
-        elif r < 0.95:
-            status, mode, err = "skipped", "fallback", "LOW_CONFIDENCE"
+            status, err = "failed", random.choice(ERRORS)
         else:
-            status, mode, err = "succeeded", "fallback", None
+            status, err = "skipped", "LOW_CONFIDENCE"
 
         finished = self._now_ms()
         # 控制超时任务耗时 >20s,与验收"单次 ≤20s 完成或报告失败"一致
@@ -208,7 +215,7 @@ class MockControlAdapter(ControlAdapter):
         db.ingest([self._event(task_id, "end", finished, {
             "status": status, "color": color, "x_mm": x, "y_mm": y, "z_mm": z,
             "occurred_at_ms": finished, "started_at_ms": started_rec,
-            "finished_at_ms": finished, "error_code": err, "mode": mode,
+            "finished_at_ms": finished, "error_code": err,
             "result_basis": "controller_only" if status == "succeeded" else "none",
         })])
         self._current = None
@@ -241,7 +248,7 @@ class MockControlAdapter(ControlAdapter):
             "color": "red",
             "x_mm": None, "y_mm": None, "z_mm": None,
             "started_at_ms": None, "finished_at_ms": None,
-            "error_code": None, "mode": "real", "result_basis": "none",
+            "error_code": None, "mode": "simulation", "result_basis": "none",
             **fields,
         }
 

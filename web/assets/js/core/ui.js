@@ -1,6 +1,8 @@
 // ui.js — 通用 UI:侧边导航、轻提示、徽章与格式化工具
 // 动态文案一律使用 textContent 写入,不拼接 innerHTML。
 
+import { APP } from './config.js';
+
 const NAV = [
   { id: 'monitor',  label: '运行监控', href: 'index.html',          icon: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M9 20h6"/>' },
   { id: 'records',  label: '任务记录', href: 'pages/records.html',  icon: '<path d="M8 6h11M8 12h11M8 18h11"/><circle cx="4.5" cy="6" r="1.2" fill="currentColor" stroke="none"/><circle cx="4.5" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="4.5" cy="18" r="1.2" fill="currentColor" stroke="none"/>' },
@@ -50,8 +52,9 @@ export function renderSidebar(activeId) {
   foot.className = 'side-foot';
   const badge = document.createElement('span');
   badge.className = 'badge';
-  badge.style.setProperty('--dot', '#fab219');
-  badge.textContent = '演示模式 · 模拟数据';
+  const isMock = APP.api.mode === 'mock';
+  badge.style.setProperty('--dot', isMock ? '#fab219' : '#0ca30c');
+  badge.textContent = isMock ? '演示模式 · 模拟数据' : '实机联调';
   foot.appendChild(badge);
   root.appendChild(foot);
 }

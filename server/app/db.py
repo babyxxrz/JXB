@@ -103,9 +103,10 @@ def query(
     where, params = [], []
 
     if since_event_id:
+        # 按自增 id 比较(而非时间戳):同一毫秒内的多条事件不会漏;
+        # since 传的 event_id 不存在时回退为返回全部。
         where.append(
-            "occurred_at_ms > COALESCE("
-            "(SELECT occurred_at_ms FROM events WHERE event_id = ?), 0)"
+            "id > COALESCE((SELECT id FROM events WHERE event_id = ?), 0)"
         )
         params.append(since_event_id)
     if color:

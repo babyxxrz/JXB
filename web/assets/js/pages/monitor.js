@@ -5,7 +5,7 @@ import { init, commands } from '../core/api.js';
 import { getState, subscribe } from '../core/store.js';
 import { renderSidebar, badge, fmt } from '../core/ui.js';
 import {
-  DEVICE_STATE_META, STATUS_META, COLOR_META, ERROR_META, DEMO_ACTIONS,
+  APP, DEVICE_STATE_META, STATUS_META, COLOR_META, ERROR_META, DEMO_ACTIONS,
 } from '../core/config.js';
 
 const el = {
@@ -86,7 +86,9 @@ function renderHero(state) {
   }
 
   const mode = document.createElement('span');
-  mode.textContent = '演示环境 · 模拟数据(非实机验收)';
+  mode.textContent = APP.api.mode === 'mock'
+    ? '演示环境 · 模拟数据(非实机验收)'
+    : '实机联调环境';
   right.appendChild(mode);
   el.hero.append(left, right);
 }

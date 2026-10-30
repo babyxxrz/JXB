@@ -42,7 +42,8 @@ export function createMockEngine() {
   let selfChecking = false;     // 自检是否进行中
   let currentTask = null;       // 当前在途任务:{ taskId, terminal }
 
-  /** 生成一条事件并入库(最新的在前,event_id 唯一、幂等) */
+  /** 生成一条事件并入库(最新的在前,event_id 唯一、幂等)
+      模拟引擎产生的事件一律 mode=simulation(诚实标记,不冒充实机)。 */
   function emit(taskId, suffix, fields) {
     pushEvent({
       event_id: `${taskId}-${suffix}`,
@@ -52,7 +53,7 @@ export function createMockEngine() {
       color: 'red',
       x_mm: null, y_mm: null, z_mm: null,
       started_at_ms: null, finished_at_ms: null,
-      error_code: null, mode: 'real', result_basis: 'none',
+      error_code: null, mode: 'simulation', result_basis: 'none',
       ...fields,
     });
   }
@@ -70,6 +71,10 @@ export function createMockEngine() {
       emit(currentTask.taskId, 'stop', {
         status: 'stopped',
         occurred_at_ms: now,
+        color: currentTask.color,
+        x_mm: currentTask.x_mm,
+        y_mm: currentTask.y_mm,
+        z_mm: currentTask.z_mm,
         finished_at_ms: now,
         error_code: 'STOP_REQUESTED',
       });
@@ -156,7 +161,10 @@ export function createMockEngine() {
     const x_mm = randBetween(x_min, x_max);
     const y_mm = randBetween(y_min, y_max);
     const z_mm = config.grab_height_mm;
-    currentTask = { taskId, terminal: false };
+    currentTask = {
+      taskId, terminal: false,
+      color, x_mm, y_mm, z_mm,
+    };
 
     emit(taskId, 'queued', {
       status: 'queued', color, x_mm, y_mm, z_mm,
@@ -174,19 +182,15 @@ export function createMockEngine() {
         if (!running || !currentTask || currentTask.taskId !== taskId) return;
         currentTask.terminal = true;
         const r = Math.random();
-        let status, mode = 'real', error_code = null;
+        let status, error_code = null;
         if (r < 0.78) {
           status = 'succeeded';
         } else if (r < 0.88) {
           status = 'failed';
           error_code = pick(ERRORS);
-        } else if (r < 0.95) {
-          status = 'skipped';         // 低置信度 → HSV 兜底仍失败
-          mode = 'fallback';
-          error_code = 'LOW_CONFIDENCE';
         } else {
-          status = 'succeeded';       // HSV 兜底定位成功
-          mode = 'fallback';
+          status = 'skipped';         // 低置信度 → HSV 兜底仍失败
+          error_code = 'LOW_CONFIDENCE';
         }
         // 控制超时任务耗时 >20s,与验收指标"单次 ≤20s 完成或报告失败"一致
         const durationMs = error_code === 'CONTROL_TIMEOUT'
@@ -199,7 +203,7 @@ export function createMockEngine() {
         emit(taskId, 'end', {
           status, color, x_mm, y_mm, z_mm,
           occurred_at_ms: finishedAt, finished_at_ms: finishedAt,
-          started_at_ms: startedForRecord, error_code, mode,
+          started_at_ms: startedForRecord, error_code,
           result_basis: status === 'succeeded' ? 'controller_only' : 'none',
         });
         currentTask = null;

@@ -87,15 +87,25 @@ class FlowTest(unittest.TestCase):
         r = self.client.post("/api/command", json={"request_id": "r4", "action": "start"})
         self.assertFalse(r.json()["accepted"], "运行中重复启动应被拒绝")
 
-    def test_config_locked_while_running(self):
-        """运动中禁止修改运动相关参数(HTTP 409)。"""
+    def test_config_motion_locked_while_running(self):
+        """运动中修改运动相关参数 → 409;仅改非运动参数 → 放行(契约 6.6)。"""
         self.client.post("/api/command", json={"request_id": "r5", "action": "start"})
         wait_until(
             lambda: self.client.get("/api/state").json()["state"] == "running", 8
         )
         cfg = self.client.get("/api/config").json()
+
+        # 改工作区(运动参数)→ 409
+        cfg["workspace"]["x_max"] += 10
         r = self.client.put("/api/config", json=cfg)
-        self.assertEqual(r.status_code, 409)
+        self.assertEqual(r.status_code, 409, "运动相关参数运动中应被拒绝")
+        cfg["workspace"]["x_max"] -= 10
+
+        # 只改 RGB 模式(非运动参数)→ 200
+        cfg["rgb_mode"] = "off" if cfg["rgb_mode"] != "off" else "solid"
+        r = self.client.put("/api/config", json=cfg)
+        self.assertEqual(r.status_code, 200, "非运动参数运动中应允许修改")
+        self.assertEqual(self.client.get("/api/config").json()["rgb_mode"], cfg["rgb_mode"])
 
 
 if __name__ == "__main__":

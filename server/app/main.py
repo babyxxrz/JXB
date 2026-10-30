@@ -6,6 +6,7 @@
 # 浏览器打开 http://127.0.0.1:8000 (前端静态页面与 API 同源同端口)。
 
 import os
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -23,7 +24,16 @@ adapter = MockControlAdapter() if CONTROL_MODE == "mock" else RealControlAdapter
 db.init_db()
 state.set_adapter(adapter)
 
-app = FastAPI(title="机械臂垃圾分拣 · 记录服务", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    yield
+    # 进程退出时取消模拟引擎的后台任务
+    for task in getattr(adapter, "_pending", set()):
+        task.cancel()
+
+
+app = FastAPI(title="机械臂垃圾分拣 · 记录服务", version="0.1.0", lifespan=lifespan)
 
 # 联调期放开跨域,方便控制模块/其他成员从任意来源调用 API
 app.add_middleware(
@@ -40,10 +50,3 @@ app.include_router(state.router)
 
 WEB_DIR = Path(__file__).resolve().parent.parent.parent / "web"
 app.mount("/", StaticFiles(directory=WEB_DIR, html=True), name="web")
-
-
-@app.on_event("shutdown")
-def _cleanup():
-    """进程退出时取消模拟引擎的后台任务。"""
-    for task in getattr(adapter, "_pending", set()):
-        task.cancel()

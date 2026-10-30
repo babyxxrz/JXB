@@ -27,7 +27,7 @@ def make_event(task_id, suffix, **over):
         "color": "red",
         "x_mm": 1.0, "y_mm": 2.0, "z_mm": 3.0,
         "started_at_ms": None, "finished_at_ms": None,
-        "error_code": None, "mode": "real", "result_basis": "none",
+        "error_code": None, "mode": "simulation", "result_basis": "none",
     }
     base.update(over)
     return base
@@ -55,6 +55,23 @@ class EventsTest(unittest.TestCase):
         self.assertEqual(r2.json()["inserted"], 0, "重复 event_id 应被忽略")
         events = self.client.get("/api/events").json()
         self.assertEqual(len(events), 1)
+
+    def test_enum_validation(self):
+        """契约枚举严格校验:非法 status/color/mode 返回 422,防止静默写入脏数据。"""
+        bad_status = make_event("T010", "end", status="success")   # 契约无此值
+        r = self.client.post("/api/events", json=[bad_status])
+        self.assertEqual(r.status_code, 422)
+
+        bad_color = make_event("T011", "end", status="succeeded", color="RED")
+        r = self.client.post("/api/events", json=[bad_color])
+        self.assertEqual(r.status_code, 422)
+
+        bad_mode = make_event("T012", "end", status="succeeded", mode="mock")
+        r = self.client.post("/api/events", json=[bad_mode])
+        self.assertEqual(r.status_code, 422)
+
+        # 全被拒绝,库里不应有任何残留
+        self.assertEqual(len(self.client.get("/api/events").json()), 0)
 
     def test_null_fields_preserved(self):
         """未知坐标用 null 表示,查询结果不得把 null 变成 0。"""
