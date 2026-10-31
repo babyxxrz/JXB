@@ -1,0 +1,16 @@
+# ROS 2 构建产物（可随时重新 colcon build 生成）
+build/
+install/
+log/
+src/*/build/
+src/*/install/
+src/*/log/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# 编辑器/系统
+.vscode/
+.idea/
+.DS_Store
