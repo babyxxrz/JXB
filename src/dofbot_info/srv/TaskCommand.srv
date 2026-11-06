@@ -1,0 +1,7 @@
+# 任务启停指令（严晨越下发, 朱玉贺执行; 见技术设计文档 7.5）
+string request_id   # 请求标识
+string action       # start / stop
+---
+bool accepted       # 是否接受命令（接收成功仅代表接受命令, 不代表运动已完成）
+string state        # idle / running / stopping / fault
+string error_code   # 空串 = 无错误

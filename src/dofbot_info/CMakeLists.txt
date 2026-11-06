@@ -12,6 +12,14 @@ find_package(rosidl_default_generators REQUIRED)# uncomment the following sectio
 # find_package(<dependency> REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/Kinemarics.srv"
+  "srv/PickPlace.srv"
+  "srv/TaskCommand.srv"
+  "srv/PlayActionGroup.srv"
+  "srv/ConfirmTask.srv"
+  "msg/TaskEvent.msg"
+  "msg/Detection.msg"
+  "msg/DetectResult.msg"
+  "msg/ControlStatus.msg"
 )
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cmath>
 #include <rclcpp/rclcpp.hpp>
 #include "dofbot_kinemarics.h"
 #include "dofbot_info/srv/kinemarics.hpp"
@@ -12,8 +13,37 @@ Dofbot dofbot = Dofbot();
 const float RA2DE = 180.0f / M_PI;
 // 角度转弧度
 const float DE2RA = M_PI / 180.0f;
-const char *urdf_file = "/home/HwHiAiUser/RobotArm/ros2_dofbot_ws/src/dofbot_moveit/urdf/dofbot.urdf"; // REVISE
+// URDF 模型文件路径: 启动时由 ROS 参数 urdf_file 指定, 缺省为板卡工作空间路径
+std::string urdf_file = "/home/HwHiAiUser/RobotArm/ros2_dofbot_ws/src/dofbot_moveit/urdf/dofbot.urdf"; // REVISE
 int a = 0;
+
+
+// 反解目标位姿并把关节角(舵机角度)填入响应; 反解失败时关节角置为 NaN 并返回 false
+bool solveIKAndFill(Dofbot &dofbot, vector<double> &targetXYZ, vector<double> &targetRPY,
+                    std::shared_ptr<dofbot_info::srv::Kinemarics::Response> response) {
+    // 创建输出角度容器
+    vector<double> outjoints;
+    // 反解求到达目标点的各关节角度
+    bool solved = dofbot.dofbot_getIK(urdf_file.c_str(), targetXYZ, targetRPY, outjoints);
+    if (!solved || outjoints.size() < 5) {
+        RCLCPP_ERROR(rclcpp::get_logger("dofbot_kinemarics_server"), "IK solve failed");
+        response->joint1 = response->joint2 = response->joint3 = response->joint4 =
+            response->joint5 = std::nan("");
+        return false;
+    }
+    // 打印反解结果
+    cout << "--------- Ik ---------" << a << "--------- Ik ---------" << endl;
+    for (int i = 0; i < 5; i++) cout << (outjoints.at(i) * RA2DE) + 90 << ",";
+    cout << endl;
+    a++;
+    response->joint1 = (outjoints.at(0) * RA2DE) + 90;
+    response->joint2 = (outjoints.at(1) * RA2DE) + 90;
+    response->joint3 = (outjoints.at(2) * RA2DE) + 90;
+    response->joint4 = (outjoints.at(3) * RA2DE) + 90;
+    response->joint5 = (outjoints.at(4) * RA2DE) + 90;
+    cout << "Finish adding to response, and joint1 is: " << response->joint1 << endl;
+    return true;
+}
 
 
 bool srvicecallback(const std::shared_ptr<dofbot_info::srv::Kinemarics::Request> request,
@@ -31,7 +61,7 @@ bool srvicecallback(const std::shared_ptr<dofbot_info::srv::Kinemarics::Request>
             initjoints.push_back((joints[i] - 90) * DE2RA);
         }
         // 调取正解函数,获取当前位姿
-        dofbot.dofbot_getFK(urdf_file, initjoints, initpos);
+        dofbot.dofbot_getFK(urdf_file.c_str(), initjoints, initpos);
         cout << "--------- Fk ---------" << a << "--------- Fk ---------" << endl;
         cout << "XYZ坐标 ： " << initpos.at(0) << " ," << initpos.at(1) << " ," << initpos.at(2) << endl;
         cout << "Roll,Pitch,Yaw： " << initpos.at(3) << " ," << initpos.at(4) << " ," << initpos.at(5) << endl;
@@ -73,26 +103,25 @@ bool srvicecallback(const std::shared_ptr<dofbot_info::srv::Kinemarics::Request>
         double rpy[]{Roll * DE2RA, Pitch * DE2RA, Yaw * DE2RA};
         cout << xyz[0] << " , " << xyz[1] << " , " << xyz[2] << "\t"
         << rpy[0] << " , " << rpy[1] << " , " << rpy[2] << endl;
-        // 创建输出角度容器
-        vector<double> outjoints;
         // 创建末端位置容器
         vector<double> targetXYZ;
         // 创建末端姿态容器
         vector<double> targetRPY;
         for (int k = 0; k < 3; ++k) targetXYZ.push_back(xyz[k]);
         for (int l = 0; l < 3; ++l) targetRPY.push_back(rpy[l]);
-        // 反解求到达目标点的各关节角度
-        dofbot.dofbot_getIK(urdf_file, targetXYZ, targetRPY, outjoints);
-        // 打印反解结果
-        cout << "--------- Ik ---------" << a << "--------- Ik ---------" << endl;
-        for (int i = 0; i < 5; i++) cout << (outjoints.at(i) * RA2DE) + 90 << ",";
-        a++;
-        response->joint1 = (outjoints.at(0) * RA2DE) + 90;
-        response->joint2 = (outjoints.at(1) * RA2DE) + 90;
-        response->joint3 = (outjoints.at(2) * RA2DE) + 90;
-        response->joint4 = (outjoints.at(3) * RA2DE) + 90;
-        response->joint5 = (outjoints.at(4) * RA2DE) + 90;
-        cout << "Finish adding to response, and joint1 is: " << response->joint1;
+        solveIKAndFill(dofbot, targetXYZ, targetRPY, response);
+    }
+
+    // 顶部垂直抓取模式: 夹爪竖直向下(Roll=-90), 目标点直接作为末端位置。
+    // 分拣业务(抓取桌面上的积木)要求垂直向下夹取, 由 dofbot_control 包调用。
+    if (request->kin_name == "ik_top") {
+        double xyz[]{request->tar_x, request->tar_y, request->tar_z};
+        double rpy[]{-90.0 * DE2RA, 0.0, 0.0};
+        vector<double> targetXYZ;
+        vector<double> targetRPY;
+        for (int k = 0; k < 3; ++k) targetXYZ.push_back(xyz[k]);
+        for (int l = 0; l < 3; ++l) targetRPY.push_back(rpy[l]);
+        solveIKAndFill(dofbot, targetXYZ, targetRPY, response);
     }
     return true;
 }
@@ -102,6 +131,9 @@ int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
   std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("dofbot_kinemarics_server");
+  // URDF 路径可通过 ROS 参数覆盖, 便于部署路径变化时无需改代码
+  node->declare_parameter<std::string>("urdf_file", urdf_file);
+  urdf_file = node->get_parameter("urdf_file").as_string();
   RCLCPP_INFO(node->get_logger(), "ROS Server Starts..");
   rclcpp::sleep_for(std::chrono::milliseconds(3000));
   RCLCPP_INFO(node->get_logger(), "ROS Waiting1..");

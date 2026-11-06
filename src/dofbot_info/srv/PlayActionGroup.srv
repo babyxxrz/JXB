@@ -1,0 +1,8 @@
+# 演示动作组触发（技术设计文档 5.4: 挥手/舞蹈演示、固定点位夹取搬运与堆叠）
+# 动作组定义见 dofbot_control/config/dofbot_config.yaml, 运动中禁止修改运动相关参数
+string group_name   # 动作组名: wave / dance / nature_transport / stack_blocks 或配置中自定义名
+int32 repeat        # 重复次数, 0 = 按配置默认值
+---
+bool accepted
+string state        # idle / running / stopping / fault
+string error_code

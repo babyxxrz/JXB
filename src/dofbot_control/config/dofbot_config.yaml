@@ -1,0 +1,99 @@
+# dofbot_control 配置（技术设计文档 8.2 配置数据）
+# 【重要】所有运动相关参数须先实机确认再修改; 运动中禁止修改运动相关参数。
+# 工作区与容器位置单位均为机械臂基坐标系 mm（坐标系定义见 docs/标定与坐标说明.md）
+
+# 驱动层: auto=优先 Arm_Lib 实机, 失败降级仿真; simulation=仿真; arm_lib=强制实机
+driver:
+  mode: auto
+  port: /dev/ttyUSB0
+  baud: 9600
+
+# 机械臂参数: 舵机角度 0-180, 90 对应 URDF 零位
+robot:
+  home_joints: [90, 90, 90, 90, 90]
+  gripper_open_deg: 140     # 夹爪张开角度(实机校准)
+  gripper_close_deg: 60     # 夹爪闭合角度(实机校准)
+
+# 标定(5.1): 指向手眼标定文件; 相对路径按本配置文件所在目录解析
+# 实机标定后替换为 hand_eye_calibrate 生成的标定文件
+calibration:
+  file: ../calibration/calibration_default.yaml
+
+# 有效工作区(5.2): 至少 120x120mm = 相机可见 ∩ 标定有效 ∩ 机械臂可达 ∩ 路径无障碍
+# 边界/抓取高度/释放高度须实机确认
+workspace:
+  x_min_mm: -100.0
+  x_max_mm: 100.0
+  y_min_mm: -80.0
+  y_max_mm: 80.0
+  z_min_mm: 30.0
+  z_max_mm: 180.0
+  z_grasp_mm: 60.0       # 抓取高度(桌面平面)
+  z_lift_mm: 120.0       # 搬运抬升高度(路径无障碍高度)
+
+# 四色容器位置(5.2): 容器中心坐标与释放高度, 须实机确认
+bins:
+  red:    { x_mm: 140.0, y_mm: 60.0,  z_release_mm: 70.0 }
+  yellow: { x_mm: 140.0, y_mm: -60.0, z_release_mm: 70.0 }
+  blue:   { x_mm: -140.0, y_mm: 60.0, z_release_mm: 70.0 }
+  green:  { x_mm: -140.0, y_mm: -60.0, z_release_mm: 70.0 }
+
+# 颜色->容器映射覆盖(缺省为同色容器); 如需改变映射在此配置
+bin_override: {}
+#  red: blue
+
+# 检测参数(7.6 统一约定)
+detect:
+  confidence_threshold: 0.5        # 默认置信度阈值
+  max_frame_age_ms: 1000           # 图像超过 1s 未用于生成任务则重新采集
+  retry_frames_on_low_confidence: 2  # 低置信度补采最多 2 帧
+
+# 控制参数(5.5)
+control:
+  move_timeout_ms: 20000           # CONTROL_TIMEOUT: >20s 无终态记失败
+  step_pause_ms: 200               # 相邻路点间暂停(实机留给舵机缓冲)
+  step_time_ms: 800                # 单路点运动时长
+  ik_timeout_ms: 5000              # 反解服务超时
+  ik_mode: ik_top                  # 顶部垂直抓取反解模式(见 dofbot_server)
+
+# 演示动作组(5.4): keyframes=关节角度序列; pick_place=固定点位夹取搬运/堆叠
+action_groups:
+  wave:                       # 挥手
+    type: keyframes
+    repeat: 2
+    frames:
+      - { joints: [90, 90, 90, 45, 90, 140], time_ms: 400 }
+      - { joints: [90, 90, 90, 135, 90, 140], time_ms: 400 }
+      - { joints: [90, 90, 90, 45, 90, 140], time_ms: 400 }
+      - { joints: [90, 90, 90, 135, 90, 140], time_ms: 400 }
+  dance:                      # 舞蹈(联调演示, 幅度实机调优)
+    type: keyframes
+    repeat: 1
+    frames:
+      - { joints: [90, 120, 60, 90, 90, 140], time_ms: 500 }
+      - { joints: [90, 60, 120, 90, 90, 140], time_ms: 500 }
+      - { joints: [90, 120, 60, 90, 90, 140], time_ms: 500 }
+      - { joints: [90, 60, 120, 90, 90, 140], time_ms: 500 }
+  nature_transport:           # 大自然搬运工: 固定点位夹取 -> 搬运到指定容器
+    type: pick_place
+    repeat: 1
+    steps:
+      - pick: { x_mm: 80.0, y_mm: 40.0, z_mm: 60.0 }
+        place: { bin_id: blue }
+  stack_blocks:               # 叠罗汉: 依次夹取固定点位积木, 堆叠到固定位置(逐层抬高)
+    type: pick_place
+    repeat: 1
+    steps:
+      - pick: { x_mm: 60.0, y_mm: 50.0, z_mm: 60.0 }
+        place: { x_mm: -60.0, y_mm: -50.0, z_mm: 70.0 }
+      - pick: { x_mm: 90.0, y_mm: 50.0, z_mm: 60.0 }
+        place: { x_mm: -60.0, y_mm: -50.0, z_mm: 85.0 }
+      - pick: { x_mm: 120.0, y_mm: 50.0, z_mm: 60.0 }
+        place: { x_mm: -60.0, y_mm: -50.0, z_mm: 100.0 }
+
+# 【待定 T3】手势->颜色映射规则, 联调前与张鹏源/严晨越确认后回填
+gesture_color_map:
+  fist: red
+  like: yellow
+  ok: blue
+  palm: green

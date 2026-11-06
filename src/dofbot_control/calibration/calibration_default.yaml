@@ -1,0 +1,13 @@
+# 示例标定（仅用于仿真联调!）
+# 映射关系: 640x480 图像中心区域 -> 约 240x160mm 工作区, 0.4mm/px 近似比例。
+# 【实机分拣前必须替换】: 运行 hand_eye_calibrate 用 9 个实测标定点生成真实标定文件,
+# 并把 dofbot_config.yaml 的 calibration.file 指向新文件。禁止直接把像素当毫米用!
+calibration_id: sim-sample
+created_at_ms: 1761900000000
+num_points: 0
+h:
+  - [0.4, 0.0, -128.0]
+  - [0.0, 0.4, -96.0]
+  - [0.0, 0.0, 1.0]
+max_residual_mm: 0.0
+note: 仿真示例标定, 实机使用前必须替换为实测标定结果
