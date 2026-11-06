@@ -86,12 +86,15 @@ class SorterNode(Node):
         threshold = self.detect_cfg["confidence_threshold"]
         candidates = [d for d in msg.detections if d.fallback or d.confidence >= threshold]
         if not candidates:
+            if not msg.detections:
+                return  # 无目标返回空数组, 等待下一帧(3.1), 不产生跳过事件
+            # 有检测但均低于阈值: 补采最多 2 帧仍不足 -> 跳过并记录 LOW_CONFIDENCE
+            best = max(msg.detections, key=lambda d: d.confidence)
             self._low_conf_streak += 1
-            self.get_logger().info("帧 %s 无有效目标(第 %d 次), 置信度阈值 %.2f" %
-                                   (msg.frame_id, self._low_conf_streak, threshold))
+            self.get_logger().info("帧 %s 无有效目标(第 %d 次), 最高置信度 %.2f(阈值 %.2f)" %
+                                   (msg.frame_id, self._low_conf_streak, best.confidence, threshold))
             if self._low_conf_streak >= 1 + self.detect_cfg["retry_frames_on_low_confidence"]:
-                # 补采最多 2 帧仍不足 -> 跳过并记录 LOW_CONFIDENCE
-                self._publish_skipped(msg, None, "LOW_CONFIDENCE")
+                self._publish_skipped(msg, best, "LOW_CONFIDENCE")
                 self._low_conf_streak = 0
                 self._last_used_frame_id = msg.frame_id
             return

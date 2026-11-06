@@ -195,10 +195,6 @@ class ControlServer(Node):
                         response.accepted = ok
                         response.state = self._state
                         response.error_code = "" if ok else "SELF_CHECK_FAILED"
-                        ctx = {"task_id": "self-check-%d" % self._now_ms(), "color": "",
-                               "has_position": False}
-                        self._publish_event(self._new_event(
-                            ctx, "succeeded" if ok else "failed", "" if ok else "SELF_CHECK_FAILED"))
                 self._publish_status()
                 return response
             if request.action == "stop":
@@ -213,10 +209,49 @@ class ControlServer(Node):
                 response.error_code = ""
                 self._publish_status()
                 return response
+            if request.action == "self_check":
+                # 仅开机自检, 不启动分拣, 不产生 task_event(自检不是分拣任务)
+                if self._busy:
+                    response.accepted = False
+                    response.error_code = "BUSY"
+                else:
+                    ok = self._self_check()
+                    response.accepted = ok
+                    response.error_code = "" if ok else "SELF_CHECK_FAILED"
+                response.state = self._state
+                self._publish_status()
+                return response
+            if request.action == "demo":
+                self._accept_demo(request.demo_action, response)
+                self._publish_status()
+                return response
             response.accepted = False
             response.state = self._state
             response.error_code = "BAD_ACTION"
             return response
+
+    def _accept_demo(self, demo_action, response):
+        """演示动作（接口样例: demo 仅演示, 不产生分拣任务事件; 需 idle 状态）。"""
+        response.state = self._state
+        if self._state == "fault":
+            response.error_code = "FAULT"
+            return
+        if self._state != "idle":
+            response.error_code = "NOT_IDLE"
+            return
+        if self._busy:
+            response.error_code = "BUSY"
+            return
+        if demo_action not in self.config["action_groups"]:
+            response.error_code = "UNKNOWN_DEMO"
+            return
+        self._busy = True
+        self._stop_event.clear()
+        ctx = {"task_id": "demo-%s-%s" % (demo_action, uuid.uuid4().hex[:8]),
+               "color": "", "has_position": False, "action_group": demo_action}
+        response.accepted = True
+        response.error_code = ""
+        threading.Thread(target=self._execute_group, args=(ctx, demo_action, 1), daemon=True).start()
 
     # ------------------------------------------------------------------ 服务: pick_place
     def _validate_pick_place(self, request):
@@ -404,11 +439,10 @@ class ControlServer(Node):
         repeat = request.repeat if request.repeat > 0 else int(group.get("repeat", 1))
         ctx = {"task_id": "group-%s-%s" % (request.group_name, uuid.uuid4().hex[:8]),
                "color": "", "has_position": False, "action_group": request.group_name}
-        queued = self._new_event(ctx, "queued")
-        self._publish_event(queued)
+        # 演示动作组不产生 task_event（task_event 仅承载分拣任务, color 必填枚举）
         self._publish_status()
         response.accepted = True
-        response.status = "queued"
+        response.status = self._state
         response.error_code = ""
         threading.Thread(target=self._execute_group, args=(ctx, request.group_name, repeat), daemon=True).start()
         return response
@@ -416,7 +450,6 @@ class ControlServer(Node):
     def _execute_group(self, ctx, group_name, repeat):
         group = self.config["action_groups"][group_name]
         started_ms = self._now_ms()
-        self._publish_event(self._new_event(ctx, "running", started_ms=started_ms))
         status, error = "succeeded", ""
         try:
             for _ in range(repeat):
@@ -446,12 +479,11 @@ class ControlServer(Node):
             status, error = "failed", "DRIVER_ERROR"
             self._set_fault("DRIVER_ERROR: %s" % exc)
         finally:
-            finished_ms = self._now_ms()
             with self._lock:
                 self._busy = False
                 if self._state == "stopping":
                     self._state = "idle"
-            self._publish_event(self._new_event(ctx, status, error, started_ms, finished_ms))
+            self.get_logger().info("动作组[%s] 结束: %s%s" % (group_name, status, ("/" + error) if error else ""))
             self._publish_status()
 
     # ------------------------------------------------------------------ 服务: confirm_task

@@ -39,6 +39,7 @@ source install/setup.bash
 
 ```bash
 # 终端 A: 启动 正逆解服务 + 控制服务 + 分拣闭环
+# 联调严晨越记录服务时加 with_event_bridge:=true(先改 config 的 server.url)
 ros2 launch dofbot_control dofbot_control.launch.py
 
 # 终端 B: 启动任务(含开机自检)
@@ -47,7 +48,7 @@ ros2 run dofbot_control task_command_client start
 # 终端 C: 发布仿真检测帧, 观察分拣闭环
 ros2 run dofbot_control fake_detect --points "red,320,240;blue,260,240;green,380,200"
 
-# 终端 D: 查看事件
+# 终端 D: 查看事件(ROS2 话题) / 事件桥接上报到记录服务 /api/events
 ros2 topic echo /task_event
 ```
 
@@ -66,9 +67,13 @@ ros2 run dofbot_control f2_test --inject stop       # F4 注入: 运动中停止
 ### 4. 演示动作组（5.4）
 
 ```bash
-ros2 run dofbot_control task_command_client start     # 动作组允许在 idle/running 状态执行
-ros2 service call /play_action_group dofbot_info/srv/PlayActionGroup "{group_name: 'wave', repeat: 0}"
-ros2 service call /play_action_group dofbot_info/srv/PlayActionGroup "{group_name: 'dance', repeat: 0}"
+# 方式一: task_command demo 指令(接口样例, 看板同款; 需 idle 状态)
+ros2 run dofbot_control task_command_client self_check          # 仅自检
+ros2 run dofbot_control task_command_client demo --demo-action wave
+ros2 run dofbot_control task_command_client demo --demo-action dance
+
+# 方式二: 直接调 play_action_group 服务(固定点位搬运/堆叠联调用)
+ros2 run dofbot_control task_command_client start               # 动作组允许在 idle/running 状态执行
 ros2 service call /play_action_group dofbot_info/srv/PlayActionGroup "{group_name: 'nature_transport', repeat: 0}"
 ros2 service call /play_action_group dofbot_info/srv/PlayActionGroup "{group_name: 'stack_blocks', repeat: 0}"
 ```

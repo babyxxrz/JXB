@@ -1,6 +1,9 @@
-# 任务启停指令（严晨越下发, 朱玉贺执行; 见技术设计文档 7.5）
+# 任务指令（严晨越下发, 朱玉贺执行; 见技术设计文档 7.5 与 docs/接口样例.md）
+# action 扩展: start / stop / self_check / demo（self_check、demo 为看板功能扩展,
+# 控制侧不能实现时须返回 accepted=false 并给出 error_code, 不得静默忽略）
 string request_id   # 请求标识
-string action       # start / stop
+string action       # start / stop / self_check / demo
+string demo_action  # action=demo 时的演示动作名: wave / dance（其余动作忽略此字段）
 ---
 bool accepted       # 是否接受命令（接收成功仅代表接受命令, 不代表运动已完成）
 string state        # idle / running / stopping / fault

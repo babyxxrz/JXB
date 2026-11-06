@@ -25,6 +25,7 @@ setup(
         'console_scripts': [
             'dofbot_control_server = dofbot_control.control_server:main',
             'dofbot_sorter = dofbot_control.sorter_node:main',
+            'dofbot_event_bridge = dofbot_control.event_bridge:main',
             'hand_eye_calibrate = dofbot_control.hand_eye_calibrate:main',
             'validate_calibration = dofbot_control.validate_calibration:main',
             'pick_place_client = dofbot_control.pick_place_client:main',
