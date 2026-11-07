@@ -38,5 +38,17 @@ Notebook阈值0.4是调试值；技术设计正式detect默认0.5。Notebook没�
 
 ## 获取附件
 
-附件文件名、大小和SHA256见 artifacts_manifest.json。尚未发布远程下载地址，当前通过 training_delivery_v001/attachments 交接。
-仓库只提交本目录的代码、文本记录和Notebook；模型/数据使用组内共享附件或经组员确认后的Release/LFS方案，不能只交付一个没有配套文件的Notebook。
+附件通过 GitHub Release 预发布版分发（联调版，正式验收缺口见 records/验收记录.md）：
+
+- 下载页：https://github.com/babyxxrz/JXB/releases/tag/training-v001
+- 8 个附件统一前缀：`https://github.com/babyxxrz/JXB/releases/download/training-v001/<文件名>`
+- 文件名、大小、SHA256 见 `artifacts_manifest.json`。
+
+使用方式：
+
+1. 模型三件套 `best.pt` / `best.onnx` / `yolov5s_bs1.om` 下载后放入本目录 `artifacts/`（已被 .gitignore 忽略），即可按 `model_release.json` 的相对路径定位。
+2. 板端推理包 `infer_project_om.tar.gz` 上传到开发板 `/home/HwHiAiUser/RobotArm/`，确认无同名工程冲突后 `tar -xzf infer_project_om.tar.gz`，再运行 `python3 om_infer.py --model=output/yolov5s_bs1.om --eval --visible`。
+3. `blocks_dataset_v001.zip` 为四类积木数据集（206 图 + 标注 + 129/56/21 划分清单）；`training_records_v001.zip` 为训练记录（opt/hyp/results.csv 与曲线）。
+4. `infer_project_original.tar.gz` 为原始推理工程，`session_evidence_original.ipynb` 为原始板端会话证据。
+
+仓库只提交本目录的代码、文本记录和 Notebook；模型/数据不进入普通 Git 历史，统一走上述 Release 下载，不能只交付一个没有配套文件的 Notebook。

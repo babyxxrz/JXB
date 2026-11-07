@@ -3,48 +3,48 @@
     "name": "best.onnx",
     "size_bytes": 28517205,
     "sha256": "75a5804fe0de2042d80fbd626821a2a0026de75a96e3163f30c58d852392c5f9",
-    "download_url": null
+    "download_url": "https://github.com/babyxxrz/JXB/releases/download/training-v001/best.onnx"
   },
   {
     "name": "best.pt",
     "size_bytes": 14419615,
     "sha256": "ec3e70f2d88d4d734a1419f71a9b73740a1d9ac62a865d17af9d3c117eb55a47",
-    "download_url": null
+    "download_url": "https://github.com/babyxxrz/JXB/releases/download/training-v001/best.pt"
   },
   {
     "name": "blocks_dataset_v001.zip",
     "size_bytes": 51316162,
     "sha256": "4019f9ee2e790b2297c39874a0ae2d6ee9ea341893a377010a2b4bb8d44fd93c",
-    "download_url": null
+    "download_url": "https://github.com/babyxxrz/JXB/releases/download/training-v001/blocks_dataset_v001.zip"
   },
   {
     "name": "infer_project_om.tar.gz",
     "size_bytes": 78562859,
     "sha256": "cedd749215509afccd2a466da6a329f3707237967f26a2169004441ce47f8b3a",
-    "download_url": null
+    "download_url": "https://github.com/babyxxrz/JXB/releases/download/training-v001/infer_project_om.tar.gz"
   },
   {
     "name": "infer_project_original.tar.gz",
     "size_bytes": 65385663,
     "sha256": "2c5449460926e9e165944b053e8d1309bc8297077098f4368e01545dceeebfb8",
-    "download_url": null
+    "download_url": "https://github.com/babyxxrz/JXB/releases/download/training-v001/infer_project_original.tar.gz"
   },
   {
     "name": "session_evidence_original.ipynb",
     "size_bytes": 502729,
     "sha256": "31dfceffa79cf550a462d78baf45e13363bca1067410dddbe2f86d99afdef802",
-    "download_url": null
+    "download_url": "https://github.com/babyxxrz/JXB/releases/download/training-v001/session_evidence_original.ipynb"
   },
   {
     "name": "training_records_v001.zip",
     "size_bytes": 3905865,
     "sha256": "684e08b8a4d9f0015ac01236d3ebb1a6b13731bf3d11a3c3406c0b0179365135",
-    "download_url": null
+    "download_url": "https://github.com/babyxxrz/JXB/releases/download/training-v001/training_records_v001.zip"
   },
   {
     "name": "yolov5s_bs1.om",
     "size_bytes": 15230881,
     "sha256": "0fc42373db0dd98379a4d32ba44c50c800deeedd158da7e4905ff87249b8a574",
-    "download_url": null
+    "download_url": "https://github.com/babyxxrz/JXB/releases/download/training-v001/yolov5s_bs1.om"
   }
 ]
