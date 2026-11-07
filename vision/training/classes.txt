@@ -1,0 +1,21 @@
+# 四色积木检测模型 —— 类别表
+# 模型实际输出顺序（与 trans_output/data.yaml 的 names、coco_names.txt 完全一致）
+
+# 索引 | 模型类别 | 项目 color 枚举 | 项目积木颜色
+0       Blue       blue             蓝色
+1       Green      green            绿色
+2       Red        red              红色
+3       Yellow     yellow           黄色
+
+# ---------------------------------------------------------------------------
+# 重要提醒（给部署负责人 张鹏源）：
+# 技术设计文档 model_release.classes 示例写的是 red/yellow/blue/green，
+# 但本模型经 Ascend Model Adapter + YOLOv5s 实际训练输出的类别顺序是
+# Blue/Green/Red/Yellow。detect 接口返回 color 时，必须按上表把
+# 模型类别索引映射到项目 color 枚举，不能直接套用文档示例顺序，否则颜色错位。
+#
+# coco_names.txt 内容应与本表前 4 行的模型类别一致：
+#   Blue
+#   Green
+#   Red
+#   Yellow

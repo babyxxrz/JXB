@@ -1,0 +1,13 @@
+{
+  "model_id": "yolov5s-blocks-v001",
+  "model_sha256": "0fc42373db0dd98379a4d32ba44c50c800deeedd158da7e4905ff87249b8a574",
+  "source": "User-provided board terminal screenshot in this chat; raw evaluation log and predictions.json not yet archived.",
+  "test_images": 21,
+  "map50": 0.943,
+  "map50_95": 0.821,
+  "script_average_inference_and_nms_ms": 129.082,
+  "p95_ms": null,
+  "independent_capture_batches_verified": false,
+  "command": "python3 om_infer.py --model=output/yolov5s_bs1.om --eval --visible",
+  "status": "observed_result_pending_raw_evidence"
+}

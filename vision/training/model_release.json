@@ -1,0 +1,28 @@
+{
+  "model_id": "yolov5s-blocks-v001",
+  "model_file": "artifacts/best.onnx",
+  "model_file_pt": "artifacts/best.pt",
+  "model_file_om": "artifacts/yolov5s_bs1.om",
+  "input_width_px": 640,
+  "input_height_px": 640,
+  "classes": [
+    "blue",
+    "green",
+    "red",
+    "yellow"
+  ],
+  "source_class_names": [
+    "Blue",
+    "Green",
+    "Red",
+    "Yellow"
+  ],
+  "trained_at_ms": null,
+  "val_map50": 0.995,
+  "status": "integration_draft",
+  "contract_complete": false,
+  "trained_at_ms_note": "Exact training completion time not independently evidenced; null is draft-only and does not satisfy final int64 contract.",
+  "val_map50_note": "Training CSV validation metric; selected checkpoint-specific evaluation evidence not yet archived.",
+  "model_sha256": "75a5804fe0de2042d80fbd626821a2a0026de75a96e3163f30c58d852392c5f9",
+  "classes_note": "Index order is the model output order, not the example enumeration order in project documentation."
+}

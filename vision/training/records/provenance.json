@@ -1,0 +1,7 @@
+{
+  "original_declared_trained_at_ms": 1793957492469,
+  "status": "unverified; retained as a claim, not confirmed timestamp",
+  "validation_map50_95_final_epoch": 0.84799,
+  "validation_map50_95_best_observed_epoch": 0.85379,
+  "model_pt_onnx_matches_converted_package": true
+}

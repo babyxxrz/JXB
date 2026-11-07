@@ -1,0 +1,67 @@
+{
+  "raw_images": 206,
+  "raw_annotations": 206,
+  "raw_images_per_class": {
+    "Blue": 116,
+    "Red": 125,
+    "Yellow": 114,
+    "Green": 113
+  },
+  "splits": {
+    "train": {
+      "images": 129,
+      "labels": 129,
+      "images_per_class_id": {
+        "0": 67,
+        "2": 77,
+        "3": 70,
+        "1": 67
+      },
+      "boxes_per_class_id": {
+        "0": 67,
+        "2": 77,
+        "3": 71,
+        "1": 67
+      }
+    },
+    "valid": {
+      "images": 56,
+      "labels": 56,
+      "images_per_class_id": {
+        "0": 35,
+        "2": 34,
+        "3": 32,
+        "1": 33
+      },
+      "boxes_per_class_id": {
+        "0": 35,
+        "2": 34,
+        "3": 32,
+        "1": 33
+      }
+    },
+    "test": {
+      "images": 21,
+      "labels": 21,
+      "images_per_class_id": {
+        "3": 12,
+        "1": 13,
+        "0": 14,
+        "2": 14
+      },
+      "boxes_per_class_id": {
+        "3": 12,
+        "1": 13,
+        "0": 14,
+        "2": 14
+      }
+    }
+  },
+  "exact_cross_split_duplicates": {
+    "train/valid": 0,
+    "train/test": 0,
+    "valid/test": 0
+  },
+  "capture_batch_independence": "not_verified",
+  "raw_matching": "Exact byte SHA256 match only; empty means unproven correspondence."
+}
