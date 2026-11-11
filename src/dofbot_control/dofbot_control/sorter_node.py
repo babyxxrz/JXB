@@ -44,6 +44,7 @@ class SorterNode(Node):
         self.workspace = self.config["workspace"]
         self.detect_cfg = self.config["detect"]
         self.bin_override = self.config.get("bin_override", {})
+        self._config_file = config_file
 
         try:
             self.calibration = load_calibration(self.config["calibration"].get("file"))
@@ -66,10 +67,31 @@ class SorterNode(Node):
         self._event_pub = self.create_publisher(TaskEvent, "task_event", 10)
         self.get_logger().info("分拣闭环就绪, 等待 control_status 与 detect_result")
 
+    def _reload_config(self):
+        """热加载（提案 2）: 重新读取配置与标定, 看板 POST /config 后下次 start 生效。"""
+        try:
+            config = load_config(self._config_file)
+        except ConfigError as exc:
+            self.get_logger().error("配置重载失败(沿用旧配置): %s" % exc)
+            return
+        self.config = config
+        self.workspace = config["workspace"]
+        self.detect_cfg = config["detect"]
+        self.bin_override = config.get("bin_override", {})
+        try:
+            self.calibration = load_calibration(config["calibration"].get("file"))
+        except CalibrationError as exc:
+            self.calibration = None
+            self.get_logger().error(str(exc))
+        self.get_logger().info("配置已热加载")
+
     def _on_status(self, msg):
+        prev = self._state
         self._state = msg.state
         self._busy = msg.busy
         self._mode = msg.mode
+        if prev != "running" and msg.state == "running":
+            self._reload_config()  # 每次 start 进入 running 时热加载配置
 
     def _on_detect(self, msg):
         if self._state != "running" or self._busy:

@@ -58,6 +58,7 @@ class ControlServer(Node):
             raise
         self.control = self.config["control"]
         self.workspace = self.config["workspace"]
+        self._config_file = config_file
 
         # 标定（对应 5.1, 标定文件不存在时服务仍启动, 但 pick_place 拒绝执行）
         self.calibration = None
@@ -102,6 +103,23 @@ class ControlServer(Node):
         self.get_logger().info("控制服务就绪, 初始状态 idle（等待 task_command start 与自检）")
 
     # ------------------------------------------------------------------ 状态
+    def _reload_config(self):
+        """热加载（提案 2）: 重新读取配置与标定, 看板 POST /config 写入覆盖文件后下次 start 生效。"""
+        try:
+            config = load_config(self._config_file)
+        except ConfigError as exc:
+            self.get_logger().error("配置重载失败(沿用旧配置): %s" % exc)
+            return
+        self.config = config
+        self.control = config["control"]
+        self.workspace = config["workspace"]
+        try:
+            self.calibration = load_calibration(config["calibration"].get("file"))
+        except CalibrationError as exc:
+            self.calibration = None
+            self.get_logger().error(str(exc))
+        self.get_logger().info("配置已热加载")
+
     def _publish_status(self):
         msg = ControlStatus()
         with self._lock:
@@ -190,6 +208,7 @@ class ControlServer(Node):
                         response.state = self._state
                         response.error_code = "BUSY"
                     else:
+                        self._reload_config()  # 热加载: 看板下发配置在每次 start 时生效
                         ok = self._self_check()
                         self._state = "running" if ok else "fault"
                         response.accepted = ok

@@ -10,8 +10,10 @@ driver:
 
 # 记录服务后端地址(事件桥接 dofbot_event_bridge 上报 POST /api/events 的目标)
 # 板卡与控制模块运行时, 改为严晨越记录服务所在机器 IP; 本机联调用 127.0.0.1
+# downlink_port 为下行端点监听端口(严晨越侧 control_url 指向 http://<控制机>:<downlink_port>)
 server:
   url: http://127.0.0.1:8000
+  downlink_port: 9100
 
 # 机械臂参数: 舵机角度 0-180, 90 对应 URDF 零位
 robot:
