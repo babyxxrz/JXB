@@ -5,6 +5,7 @@
 #   python -m uvicorn app.main:app --port 8000
 # 浏览器打开 http://127.0.0.1:8000 (前端静态页面与 API 同源同端口)。
 
+import asyncio
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -27,7 +28,13 @@ state.set_adapter(adapter)
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    # real 模式:启动控制状态轮询(1s 周期,不可达时看板显示 fault)
+    poll_task = None
+    if hasattr(adapter, "poll_loop"):
+        poll_task = asyncio.create_task(adapter.poll_loop())
     yield
+    if poll_task is not None:
+        poll_task.cancel()
     # 进程退出时取消模拟引擎的后台任务
     for task in getattr(adapter, "_pending", set()):
         task.cancel()

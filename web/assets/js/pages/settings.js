@@ -119,10 +119,14 @@ function onSave() {
   };
   updateHint();
   if (APP.api.mode === 'real') {
-    // real 模式:保存到后端;运动中后端会拒绝(409)
+    // real 模式:保存到后端;运动中后端会拒绝(409);
+    // delivered=false 表示控制模块未确认接收(保存仍成功)
     configApi
       .save(next)
-      .then(() => showToast('参数已保存'))
+      .then((resp) => showToast(
+        resp.delivered === false ? '参数已保存,控制模块未确认接收' : '参数已保存',
+        resp.delivered === false ? 'error' : 'ok',
+      ))
       .catch((err) => showToast(err.message || '保存失败', 'error'));
   } else {
     saveConfig(next);
