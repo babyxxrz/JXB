@@ -13,7 +13,7 @@ python -m uvicorn app.main:app --port 8000
 浏览器打开 http://127.0.0.1:8000 (前端页面与 API 同源同端口)。
 
 - 默认 `JXB_CONTROL=mock`:内置模拟控制适配器,启动任务后自动产生分拣事件流,无硬件即可完整演示;模拟事件 mode 一律标记 simulation。
-- 切真实控制:`JXB_CONTROL=real`(待定项 T1/T7 确认后实现 ROS2 桥接,见 `app/control.py`)。
+- 切真实控制:`JXB_CONTROL=real` + `JXB_CONTROL_URL=http://<控制机>:9100`(或写入 `server/data/server.json` 的 `control_url`)。真实桥接为 HTTP 下行桥(方案 A),接口规范与行为约定见 [docs/联调冻结方案.md](../docs/联调冻结方案.md) 附录;控制侧未就绪时可先用 `python -m uvicorn tests.fake_control:app --port 9100` 验证本侧链路。
 - 数据落盘位置:`server/data/`(可用环境变量 `JXB_DATA_DIR` 重定向,已被 .gitignore 排除)。
 - 端口说明:本服务与 `web/start.bat` 同用 8000 端口,**二选一**;完整演示请用本服务(已托管前端)。
 

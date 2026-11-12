@@ -56,11 +56,13 @@ def get_config() -> dict:
 
 
 @router.put("/config")
-def put_config(config: Config) -> dict:
+async def put_config(config: Config) -> dict:
     """保存参数配置(契约 6.6:运动中禁止修改运动相关参数)。
 
     非待机时仅校验运动相关字段(工作区/容器位置/抓取高度)是否变化:
     变化 → 409;未变化(如仅调 RGB 模式/蜂鸣器)→ 放行。
+    保存优先于下发:控制模块不可达时配置照常保存,返回 delivered=false,
+    看板提示「已保存,控制模块未确认接收」。
     """
     incoming = config.model_dump()
     if _adapter.get_state()["state"] != "idle":
@@ -73,4 +75,5 @@ def put_config(config: Config) -> dict:
         if motion_changed:
             raise HTTPException(status_code=409, detail="运动中禁止修改运动相关参数")
     db.save_config(incoming)
-    return incoming
+    delivered = await _adapter.push_config(incoming)
+    return {**incoming, "delivered": delivered}

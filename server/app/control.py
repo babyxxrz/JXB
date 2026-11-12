@@ -10,8 +10,12 @@ import random
 import re
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
+from uuid import uuid4
+
+import httpx
 
 from . import db
+from .settings import load_settings
 
 COLORS = ["red", "yellow", "blue", "green"]
 ERRORS = ["LOW_CONFIDENCE", "OUT_OF_WORKSPACE", "CONTROL_TIMEOUT"]
@@ -36,14 +40,18 @@ class ControlAdapter(ABC):
     @abstractmethod
     async def demo(self, action: str) -> bool: ...
 
+    async def push_config(self, config: dict) -> bool:
+        """配置下发到控制模块;mock 无控制侧,恒返回 True(已送达)。"""
+        return True
+
 
 class MockControlAdapter(ControlAdapter):
     """演示用模拟控制:自检 → 分拣循环 → 停止,事件按契约字段入库。"""
 
     def __init__(self):
         self.state = "idle"
-        self.self_check = {"running": False, "items": [], "checked_at_ms": None}
-        self.demo = None
+        self._self_check = {"running": False, "items": [], "checked_at_ms": None}
+        self._demo = None
         self._seq = self._restore_seq()
         self._pending: set[asyncio.Task] = set()
         self._current: dict | None = None   # 在途任务:{task_id, terminal}
@@ -51,15 +59,15 @@ class MockControlAdapter(ControlAdapter):
     # ------------------------------ 状态 ------------------------------
 
     def get_state(self) -> dict:
-        return {"state": self.state, "self_check": self.self_check, "demo": self.demo}
+        return {"state": self.state, "self_check": self._self_check, "demo": self._demo}
 
     # ------------------------------ 指令 ------------------------------
 
     async def start(self) -> bool:
         """启动任务:自检通过后进入 running,再开始串行分拣。"""
-        if self.state != "idle" or self.self_check["running"]:
+        if self.state != "idle" or self._self_check["running"]:
             return False
-        self.self_check["running"] = True
+        self._self_check = {"running": True, "items": [], "checked_at_ms": None}
         items = ["舵机位置", "RGB 灯", "蜂鸣器"]
         for i, name in enumerate(items):
             self._spawn(self._check_step(name, last=(i == len(items) - 1), then_run=True), 0.45 * (i + 1))
@@ -67,7 +75,7 @@ class MockControlAdapter(ControlAdapter):
 
     async def stop(self) -> bool:
         """停止:取消未派发动作,在途任务记 stopped(STOP_REQUESTED),≤1s 回待机。"""
-        if self.state != "running" and not self.self_check["running"]:
+        if self.state != "running" and not self._self_check["running"]:
             return False
         for t in list(self._pending):
             t.cancel()
@@ -85,16 +93,16 @@ class MockControlAdapter(ControlAdapter):
                 "error_code": "STOP_REQUESTED",
             })])
         self._current = None
-        self.self_check["running"] = False
+        self._self_check["running"] = False
         self.state = "stopping"
         self._spawn(self._to_idle(), 0.7)   # 停止请求 ≤1s 验收
         return True
 
     async def self_check(self) -> bool:
         """仅开机自检,不启动分拣。"""
-        if self.state != "idle" or self.self_check["running"]:
+        if self.state != "idle" or self._self_check["running"]:
             return False
-        self.self_check["running"] = True
+        self._self_check = {"running": True, "items": [], "checked_at_ms": None}
         items = ["舵机位置", "RGB 灯", "蜂鸣器"]
         for i, name in enumerate(items):
             self._spawn(self._check_step(name, last=(i == len(items) - 1)), 0.45 * (i + 1))
@@ -102,9 +110,9 @@ class MockControlAdapter(ControlAdapter):
 
     async def demo(self, action: str) -> bool:
         """演示动作(挥手/舞蹈):仅演示,不产生分拣任务事件。"""
-        if self.state != "idle" or self.demo:
+        if self.state != "idle" or self._demo:
             return False
-        self.demo = {"action": action, "until_ms": self._now_ms() + 1800}
+        self._demo = {"action": action, "until_ms": self._now_ms() + 1800}
         self._spawn(self._end_demo(), 1.8)
         return True
 
@@ -140,23 +148,23 @@ class MockControlAdapter(ControlAdapter):
         self._pending.add(task)
 
     async def _check_step(self, name: str, last: bool, then_run: bool = False):
-        items = self.self_check["items"] + [{"name": name, "status": "ok"}]
+        items = self._self_check["items"] + [{"name": name, "status": "ok"}]
         if last:
-            self.self_check = {
+            self._self_check = {
                 "running": False, "items": items, "checked_at_ms": self._now_ms(),
             }
             if then_run and self.state == "idle":
                 self.state = "running"
                 self._spawn_loop(self._pick_loop())
         else:
-            self.self_check["running"] = True
-            self.self_check["items"] = items
+            self._self_check["running"] = True
+            self._self_check["items"] = items
 
     async def _to_idle(self):
         self.state = "idle"
 
     async def _end_demo(self):
-        self.demo = None
+        self._demo = None
 
     async def _pick_loop(self):
         """串行分拣循环:单次分拣结束后才派发下一次。"""
@@ -254,26 +262,88 @@ class MockControlAdapter(ControlAdapter):
 
 
 class RealControlAdapter(ControlAdapter):
-    """真实控制桥接占位(待定项 T1/T7:运行时通信链路与 ROS2 发行版确认后实现)。
+    """真实控制:HTTP 下行桥(方案 A,见 docs/联调冻结方案.md 提案 1)。
 
-    计划形态:通过 ROS2 服务调用朱玉贺的 pick_place / task_command,事件由其
-    POST /api/events 入库,本类只负责指令转发与状态查询,不生成事件。
+    看板机器零 ROS2 依赖;控制侧由朱玉贺的 dofbot_event_bridge 增加下行端点:
+      POST {control.url}/task_command  请求 {request_id, action, demo_action?}
+                                       响应 {accepted, state, error_code}
+      GET  {control.url}/status        响应 {state, self_check?, demo?}
+      POST {control.url}/config        响应 {accepted: true}
+    行为约定(朱玉贺侧实现参照:server/tests/fake_control.py):
+    - 指令 5s 超时视为 CONTROL_TIMEOUT,返回 accepted=false,不挂起看板;
+    - request_id 幂等:重复请求返回相同结果,不重复执行;
+    - 控制不可达时本适配器上报 state=fault,由看板明示,不静默。
     """
 
-    def __init__(self):
+    def __init__(self, control_url: str | None = None, timeout_s: float | None = None):
+        settings = load_settings()
+        self.url = (control_url or settings["control_url"]).rstrip("/")
+        self.timeout = timeout_s if timeout_s is not None else settings["control_timeout_s"]
         self.state = "idle"
+        self._self_check = {"running": False, "items": [], "checked_at_ms": None}
+        self._demo = None
+        self._reachable = False
 
     def get_state(self) -> dict:
-        return {"state": self.state, "self_check": {"running": False, "items": []}, "demo": None}
+        return {
+            "state": self.state if self._reachable else "fault",
+            "self_check": self._self_check,
+            "demo": self._demo,
+        }
+
+    async def poll_loop(self) -> None:
+        """后台轮询控制状态(1s 周期,符合看板 ≤1s 呈现)。"""
+        while True:
+            await self._poll_once()
+            await asyncio.sleep(1.0)
+
+    async def _poll_once(self) -> None:
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                r = await client.get(f"{self.url}/status")
+                r.raise_for_status()
+                data = r.json()
+        except Exception:
+            self._reachable = False
+            return
+        self._reachable = True
+        self.state = data.get("state", "idle")
+        self._self_check = data.get("self_check") or {"running": False, "items": [], "checked_at_ms": None}
+        self._demo = data.get("demo")
+
+    async def _command(self, action: str, demo_action: str | None = None) -> bool:
+        body = {"request_id": uuid4().hex, "action": action}
+        if demo_action:
+            body["demo_action"] = demo_action
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                r = await client.post(f"{self.url}/task_command", json=body)
+                r.raise_for_status()
+                data = r.json()
+            return bool(data.get("accepted"))
+        except Exception:
+            # 超时/不可达均视为指令未接受;看板经 /api/state 的 fault 状态获知
+            return False
 
     async def start(self) -> bool:
-        raise NotImplementedError("真实控制桥接待 T1/T7 确认后实现")
+        return await self._command("start")
 
     async def stop(self) -> bool:
-        raise NotImplementedError("真实控制桥接待 T1/T7 确认后实现")
+        return await self._command("stop")
 
     async def self_check(self) -> bool:
-        raise NotImplementedError("真实控制桥接待 T1/T7 确认后实现")
+        return await self._command("self_check")
 
     async def demo(self, action: str) -> bool:
-        raise NotImplementedError("真实控制桥接待 T1/T7 确认后实现")
+        return await self._command("demo", action)
+
+    async def push_config(self, config: dict) -> bool:
+        """配置下发:保存优先,控制不可达时不阻塞保存,返回是否已送达。"""
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                r = await client.post(f"{self.url}/config", json=config)
+                r.raise_for_status()
+                data = r.json()
+            return bool(data.get("accepted", True))
+        except Exception:
+            return False

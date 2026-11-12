@@ -78,6 +78,25 @@ class FlowTest(unittest.TestCase):
             "停止后不应继续产生事件",
         )
 
+    def test_self_check_and_demo_commands(self):
+        """自检与演示指令(看板扩展动作)可受理且不产生 task_event。"""
+        before = len(self.client.get("/api/events").json())
+        r = self.client.post("/api/command", json={"request_id": "r3", "action": "self_check"})
+        self.assertTrue(r.json()["accepted"])
+        wait_until(
+            lambda: self.client.get("/api/state").json()["self_check"]["items"].__len__() == 3, 5
+        )
+        r = self.client.post(
+            "/api/command",
+            json={"request_id": "r4", "action": "demo", "demo_action": "wave"},
+        )
+        self.assertTrue(r.json()["accepted"])
+        wait_until(lambda: self.client.get("/api/state").json()["demo"] is None, 4)
+        self.assertEqual(
+            len(self.client.get("/api/events").json()), before,
+            "自检与演示动作不产生 task_event(契约)",
+        )
+
     def test_reject_double_start(self):
         """运行中重复启动被拒绝(accepted=false)。"""
         self.client.post("/api/command", json={"request_id": "r3", "action": "start"})
