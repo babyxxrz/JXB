@@ -1,0 +1,11 @@
+# vision 模块依赖(协作规范 §六:依赖写进 requirements.txt)
+#
+# 板载(Atlas 200I DK A2)安装:
+#   pip install -r requirements.txt
+#   (acl 由 CANN 工具链提供,不走 pip;装好 CANN 后 import acl 即可)
+#
+# 开发机(Windows,只跑单测/自检,不需要 ACL):
+#   同样安装以下包即可,13+9 个单测与 perf_test --fake / demo --mock 全部可跑
+
+numpy>=1.21
+opencv-python>=4.5

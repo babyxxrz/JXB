@@ -1,0 +1,18 @@
+# Python 缓存
+__pycache__/
+*.pyc
+
+# 模型大文件(杨泽交付的 ONNX / 转换产物 .om 不入库,只在本地)
+model_convert/models/*.onnx
+model_convert/models/*.pt
+model_convert/models/*.weights
+model_convert/models/*.tar.gz
+model_convert/om/*.om
+
+# 测试临时产物(正式测试记录 CSV 按需单独保留)
+tests/perf_result_*.csv
+
+# 实机标定产出的图片/临时数据
+*.jpg
+*.png
+hsv_fallback/calib_*.png
