@@ -12,6 +12,11 @@
 | detector.py | Detector 类:契约输出、帧新鲜度、缓存失效 | 任意(可单测) |
 | acl_engine.py | PyACL 封装:加载 .om、infer | 仅 Atlas 200I DK A2 |
 | demo_detect.py | 命令行 demo:单图 / 摄像头 | 板子 |
+| ros_publisher.py | 将检测结果发布到 ROS2 `/detect_result` | 板子 |
+
+当前本地集成工作区的 `model_convert/om/yolov5s_bs1.om` 已由训练交付包复制，
+SHA256 为 `0fc42373db0dd98379a4d32ba44c50c800deeedd158da7e4905ff87249b8a574`。
+该模型文件被 `.gitignore` 排除，向其他机器部署时需单独复制。
 
 ## 在板子上的使用顺序
 
@@ -25,6 +30,9 @@ python demo_detect.py --model ../model_convert/om/xxx.om --image 测试图.jpg
 
 # 3. 摄像头实时(ESC 退出)
 python demo_detect.py --model ../model_convert/om/xxx.om --camera 0 --show
+
+# 联调:先 source ROS2 和本工作区 install/setup.bash，再发布实时检测帧
+python demo_detect.py --model ../model_convert/om/xxx.om --camera 0 --publish-ros
 ```
 
 无模型独立演示(协作规范 §三,固定检测结果,输出明确标记"模拟"):

@@ -50,6 +50,7 @@ def make_v8_output(center=(320, 320), box=(40, 40), cls_id=0, logit=10.0, N=8400
 def make_detector(outputs):
     cfg = load_config()
     cfg["model"]["format"] = "v8"
+    cfg["detect"]["apply_sigmoid"] = True
     return Detector(FakeEngine(outputs), cfg)
 
 
@@ -70,14 +71,14 @@ def test_contract_fields_and_mapping():
     assert len(result["detections"]) == 1
     d = result["detections"][0]
     assert d["detection_id"] == f"d-{result['frame_id']}-0"
-    assert d["color"] == "red"
+    assert d["color"] == "blue"
     assert 0.0 < d["confidence"] <= 1.0
     assert abs(d["center_u_px"] - 320) < 1.0
     assert abs(d["center_v_px"] - 320) < 1.0
 
     # JSON 可序列化(交给朱玉贺的传输格式)
     s = det.result_json(result)
-    assert json.loads(s)["detections"][0]["color"] == "red"
+    assert json.loads(s)["detections"][0]["color"] == "blue"
 
 
 def test_coord_mapping_with_letterbox():

@@ -1,15 +1,15 @@
 {
   "model": {
-    "om_path": "../model_convert/om/yolov8n_4cls.om",
+    "om_path": "../model_convert/om/yolov5s_bs1.om",
     "input_width": 640,
     "input_height": 640,
-    "format": "v8",
-    "classes": ["red", "yellow", "blue", "green"]
+    "format": "v5",
+    "classes": ["blue", "green", "red", "yellow"]
   },
   "detect": {
     "conf_threshold": 0.5,
     "iou_threshold": 0.45,
-    "apply_sigmoid": true,
+    "apply_sigmoid": false,
     "frame_max_age_ms": 1000
   }
 }

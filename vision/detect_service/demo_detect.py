@@ -66,11 +66,23 @@ def main():
     ap.add_argument("--save-dir", help="保存标注后的图片到该目录")
     ap.add_argument("--mock", action="store_true",
                     help="[模拟] 不用真模型,输出固定检测结果(协作规范 §三 独立演示)")
+    ap.add_argument("--publish-ros", action="store_true",
+                    help="将每帧结果发布到 ROS2 /detect_result (需已构建 dofbot_info)")
     args = ap.parse_args()
+
+    if args.publish_ros and args.camera is None:
+        ap.error("--publish-ros 需要 --camera，确保持续发布新帧")
+    publisher = None
+    if args.publish_ros:
+        import rclpy
+        from ros_publisher import DetectPublisher
+        rclpy.init()
+        publisher = DetectPublisher()
 
     cfg = load_config()
     if args.mock:
-        engine = MockEngine(cfg["model"]["format"], len(cfg["model"]["classes"]))
+        engine = MockEngine(cfg["model"]["format"], len(cfg["model"]["classes"]),
+                            cfg["model"]["classes"].index("red"))
         print("[模拟数据] 未使用真实模型,以下为固定检测结果,不得作为实机验收依据")
     else:
         from acl_engine import AclEngine
@@ -123,6 +135,8 @@ def main():
                 continue
             t0 = time.time()
             result = detector.detect(img)
+            if publisher is not None:
+                publisher.publish_result(result)
             cost_ms = (time.time() - t0) * 1000
             print(f"{brief(result)}  [{cost_ms:.0f}ms]")
             if args.show or args.save_dir:
@@ -137,6 +151,9 @@ def main():
             if key == 27:
                 break
         cap.release()
+        if publisher is not None:
+            publisher.destroy_node()
+            rclpy.shutdown()
         return
 
     ap.print_help()

@@ -1,0 +1,17 @@
+# pick_place 控制服务（朱玉贺执行; 见技术设计文档 7.3）
+# 服务职责: 校验坐标范围与机械臂状态后串行执行动作; 禁止并行执行两项运动任务
+string task_id         # 任务唯一标识（相同 task_id 不重复执行）
+string frame_id        # 帧唯一标识
+string detection_id    # 检测目标标识
+string color           # red / yellow / blue / green
+float64 x_mm           # 机械臂基坐标系抓取位置, mm（禁止将像素值直接当毫米值）
+float64 y_mm
+float64 z_mm
+string bin_id          # 目标容器 red / yellow / blue / green
+string calibration_id  # 标定版本（须与当前加载标定一致）
+string mode            # 扩展字段: 空串=按驱动层模式(real/simulation); fallback=HSV兜底定位
+---
+bool accepted          # 是否接受命令（接受仅代表已入队, 不代表运动已完成）
+string status          # 该任务当前状态 queued / running / succeeded / failed / skipped
+string error_code      # 空串=无错误; 最低错误码见技术设计文档 9.1
+string event_id        # 对应的 queued 事件 id, 便于看板跟踪
